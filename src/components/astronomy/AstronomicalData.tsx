@@ -1,196 +1,298 @@
+import { useEffect, useRef, useState } from "react";
+import { motion, useInView, useMotionValue, useTransform, animate } from "framer-motion";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+import { Clock, Zap, Gauge, Atom, Telescope } from "lucide-react";
 
-import { motion } from "framer-motion";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
+const stellarData = [
+  { name: "Anãs Vermelhas", value: 75, color: "#fb7185" },
+  { name: "Tipo Solar", value: 10, color: "#fbbf24" },
+  { name: "Gigantes", value: 8, color: "#fb923c" },
+  { name: "Anãs Brancas", value: 6, color: "#7dd3fc" },
+  { name: "Outras", value: 1, color: "#c084fc" },
+];
+
+const planetaryData = [
+  { planet: "Mercúrio", mass: 0.055 },
+  { planet: "Vênus", mass: 0.815 },
+  { planet: "Terra", mass: 1.0 },
+  { planet: "Marte", mass: 0.107 },
+  { planet: "Júpiter", mass: 317.8 },
+  { planet: "Saturno", mass: 95.2 },
+  { planet: "Urano", mass: 14.5 },
+  { planet: "Netuno", mass: 17.1 },
+];
+
+const cosmicScaleData = [
+  { object: "Terra", logSize: 0, size: "1 R⊕", note: "Nosso planeta" },
+  { object: "Sol", logSize: 2.04, size: "109 R⊕", note: "Estrela anã amarela" },
+  { object: "Betelgeuse", logSize: 4.21, size: "~640 R☉", note: "Supergigante vermelha" },
+  { object: "Sistema Solar", logSize: 9.4, size: "~287 ua", note: "Até a heliopausa" },
+  { object: "Via Láctea", logSize: 21, size: "100.000 ly", note: "Nossa galáxia" },
+  { object: "Universo Observável", logSize: 26.97, size: "93 bi ly", note: "Limite do horizonte" },
+];
+
+const exoplanetDiscoveries = [
+  { year: 1995, total: 1 },
+  { year: 2000, total: 50 },
+  { year: 2005, total: 180 },
+  { year: 2010, total: 490 },
+  { year: 2015, total: 1500 },
+  { year: 2020, total: 4300 },
+  { year: 2023, total: 5500 },
+];
+
+const constants = [
+  { title: "Idade do Universo", value: 13.8, suffix: " bi", unit: "anos", icon: Clock, color: "from-amber-300 to-rose-500" },
+  { title: "Velocidade da Luz", value: 299792458, suffix: "", unit: "m/s", icon: Zap, color: "from-cyan-300 to-blue-500" },
+  { title: "Temperatura do CMB", value: 2.725, suffix: "", unit: "Kelvin", icon: Atom, color: "from-violet-300 to-fuchsia-500" },
+  { title: "Constante de Hubble", value: 70, suffix: "", unit: "km/s/Mpc", icon: Telescope, color: "from-emerald-300 to-teal-500" },
+];
+
+/** Counter that animates from 0 to value when scrolled into view. */
+const Counter = ({ to, decimals = 0 }: { to: number; decimals?: number }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const mv = useMotionValue(0);
+  const rounded = useTransform(mv, (v) =>
+    v.toLocaleString("pt-BR", { maximumFractionDigits: decimals, minimumFractionDigits: decimals }),
+  );
+  const [text, setText] = useState("0");
+  useEffect(() => {
+    const unsub = rounded.on("change", (v) => setText(v));
+    return () => unsub();
+  }, [rounded]);
+  useEffect(() => {
+    if (inView) {
+      const controls = animate(mv, to, { duration: 2.2, ease: [0.22, 1, 0.36, 1] });
+      return () => controls.stop();
+    }
+  }, [inView, mv, to]);
+  return <span ref={ref}>{text}</span>;
+};
+
+const TOOLTIP_STYLE = {
+  backgroundColor: "rgba(10, 10, 26, 0.92)",
+  backdropFilter: "blur(8px)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: "12px",
+  boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+  fontFamily: "Space Grotesk, sans-serif",
+} as const;
 
 export const AstronomicalData = () => {
-  const stellarData = [
-    { name: "Anãs Vermelhas", value: 75, color: "#FF6B6B" },
-    { name: "Tipo Solar", value: 10, color: "#FFD93D" },
-    { name: "Gigantes", value: 8, color: "#FF8E53" },
-    { name: "Anãs Brancas", value: 6, color: "#74C0FC" },
-    { name: "Outras", value: 1, color: "#9775FA" }
-  ];
-
-  const planetaryData = [
-    { planet: "Mercúrio", distance: 0.39, mass: 0.055, temperature: 167 },
-    { planet: "Vênus", distance: 0.72, mass: 0.815, temperature: 462 },
-    { planet: "Terra", distance: 1.0, mass: 1.0, temperature: 15 },
-    { planet: "Marte", distance: 1.52, mass: 0.107, temperature: -65 },
-    { planet: "Júpiter", distance: 5.2, mass: 317.8, temperature: -110 },
-    { planet: "Saturno", distance: 9.5, mass: 95.2, temperature: -140 },
-    { planet: "Urano", distance: 19.2, mass: 14.5, temperature: -195 },
-    { planet: "Netuno", distance: 30.1, mass: 17.1, temperature: -200 }
-  ];
-
-  const cosmicScaleData = [
-    { object: "Terra", size: 1, unit: "diâmetros terrestres" },
-    { object: "Sol", size: 109, unit: "diâmetros terrestres" },
-    { object: "Betelgeuse", size: 1400, unit: "diâmetros solares" },
-    { object: "Via Láctea", size: 100000, unit: "anos-luz" },
-    { object: "Universo Observável", size: 93000000000, unit: "anos-luz" }
-  ];
-
-  const exoplanetDiscoveries = [
-    { year: 1995, total: 1 },
-    { year: 2000, total: 50 },
-    { year: 2005, total: 180 },
-    { year: 2010, total: 490 },
-    { year: 2015, total: 1500 },
-    { year: 2020, total: 4300 },
-    { year: 2023, total: 5500 }
-  ];
-
   return (
-    <div className="min-h-screen pt-20">
+    <section className="min-h-screen pt-28 pb-16">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        className="container mx-auto px-6 py-12"
+        transition={{ duration: 0.7 }}
+        className="container mx-auto px-4 sm:px-6"
       >
-        <h2 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
-          Dados Astronômicos
-        </h2>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="text-center mb-10">
+          <span className="section-label">Capítulo V</span>
+          <h2 className="font-display text-4xl md:text-6xl font-black text-gradient-aurora glow-text">
+            Dados Astronômicos
+          </h2>
+          <p className="text-blue-100/70 mt-3 max-w-2xl mx-auto">
+            Números, escalas e descobertas que moldam nossa visão do cosmos.
+          </p>
+        </div>
+
+        {/* Constants */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {constants.map((c, i) => (
+            <motion.div
+              key={c.title}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 * i }}
+              whileHover={{ y: -4 }}
+              className="glass-card glass-card-glow p-5"
+            >
+              <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${c.color} shadow-lg mb-3`}>
+                <c.icon size={16} className="text-white" />
+              </div>
+              <div className="text-[10px] uppercase tracking-widest text-white/55 mb-1">{c.title}</div>
+              <div className="font-display text-2xl md:text-3xl font-bold text-white tabular-nums">
+                <Counter to={c.value} decimals={c.value < 10 && c.value !== Math.floor(c.value) ? 3 : 0} />
+                {c.suffix}
+              </div>
+              <div className="text-xs text-white/50 mt-1">{c.unit}</div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Pie + Line */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-black/30 backdrop-blur-md p-6 rounded-lg border border-green-500/30"
+            transition={{ delay: 0.3 }}
+            className="glass-card glass-card-glow p-6"
           >
-            <h3 className="text-xl font-bold text-green-300 mb-4">Distribuição de Tipos Estelares</h3>
-            <div className="h-64">
+            <h3 className="font-display text-lg font-bold text-white mb-1">Tipos Estelares</h3>
+            <p className="text-xs text-white/55 mb-4">Distribuição percentual aproximada na vizinhança galáctica</p>
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={stellarData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}%`}
-                  >
-                    {stellarData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Pie data={stellarData} cx="50%" cy="50%" innerRadius={45} outerRadius={95} dataKey="value" paddingAngle={2}>
+                    {stellarData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} stroke="rgba(0,0,0,0.4)" strokeWidth={2} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: "#fff" }} formatter={(v: number) => `${v}%`} />
+                  <Legend
+                    verticalAlign="bottom"
+                    iconType="circle"
+                    formatter={(value) => <span className="text-xs text-white/75">{value}</span>}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-black/30 backdrop-blur-md p-6 rounded-lg border border-blue-500/30"
+            transition={{ delay: 0.4 }}
+            className="glass-card glass-card-glow p-6"
           >
-            <h3 className="text-xl font-bold text-blue-300 mb-4">Descobertas de Exoplanetas</h3>
-            <div className="h-64">
+            <h3 className="font-display text-lg font-bold text-white mb-1">Descobertas de Exoplanetas</h3>
+            <p className="text-xs text-white/55 mb-4">Total cumulativo confirmado, por ano</p>
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={exoplanetDiscoveries}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="year" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1F2937',
-                      border: '1px solid #3B82F6',
-                      borderRadius: '8px'
-                    }}
+                  <defs>
+                    <linearGradient id="line-grad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#60a5fa" />
+                      <stop offset="100%" stopColor="#a855f7" />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                  <XAxis dataKey="year" stroke="rgba(255,255,255,0.6)" tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }} />
+                  <YAxis stroke="rgba(255,255,255,0.6)" tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: "#fff" }} cursor={{ stroke: "#a855f7", strokeOpacity: 0.3 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="total"
+                    stroke="url(#line-grad)"
+                    strokeWidth={3}
+                    dot={{ fill: "#a855f7", r: 4 }}
+                    activeDot={{ r: 6, fill: "#fff" }}
                   />
-                  <Line type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={3} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </motion.div>
         </div>
 
+        {/* Bar log */}
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-black/30 backdrop-blur-md p-6 rounded-lg border border-purple-500/30 mb-8"
+          transition={{ delay: 0.5 }}
+          className="glass-card glass-card-glow p-6 mb-8"
         >
-          <h3 className="text-xl font-bold text-purple-300 mb-4">Comparação Planetária (Sistema Solar)</h3>
-          <div className="h-64">
+          <div className="flex items-end justify-between mb-1">
+            <h3 className="font-display text-lg font-bold text-white">Massa Planetária — escala logarítmica</h3>
+            <span className="text-xs text-white/50">Terra = 1</span>
+          </div>
+          <p className="text-xs text-white/55 mb-4">Júpiter pesa 317× a Terra; escala log evita que os rochosos sumam</p>
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={planetaryData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="planet" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#1F2937',
-                    border: '1px solid #A855F7',
-                    borderRadius: '8px'
-                  }}
+                <defs>
+                  <linearGradient id="bar-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#3b82f6" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="planet" stroke="rgba(255,255,255,0.6)" tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }} />
+                <YAxis
+                  stroke="rgba(255,255,255,0.6)"
+                  tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
+                  scale="log"
+                  domain={[0.01, 1000]}
                 />
-                <Bar dataKey="mass" fill="#A855F7" name="Massa (Terra = 1)" />
+                <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: "#fff" }} cursor={{ fill: "rgba(168,85,247,0.08)" }} />
+                <Bar dataKey="mass" fill="url(#bar-grad)" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[
-            { title: "Idade do Universo", value: "13.8", unit: "bilhões de anos" },
-            { title: "Velocidade da Luz", value: "299.792.458", unit: "m/s" },
-            { title: "Temperatura do CMB", value: "2.725", unit: "Kelvin" },
-            { title: "Constante de Hubble", value: "70", unit: "km/s/Mpc" }
-          ].map((item, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 + index * 0.1 }}
-              className="bg-black/30 backdrop-blur-md p-6 rounded-lg border border-cyan-500/30 text-center"
-            >
-              <h4 className="text-lg font-semibold text-cyan-300 mb-2">{item.title}</h4>
-              <p className="text-2xl font-bold text-white mb-1">{item.value}</p>
-              <p className="text-sm text-gray-400">{item.unit}</p>
-            </motion.div>
-          ))}
-        </div>
-
+        {/* Cosmic scale visual */}
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
-          className="bg-black/30 backdrop-blur-md p-8 rounded-lg border border-yellow-500/30"
+          transition={{ delay: 0.6 }}
+          className="glass-card glass-card-glow p-6 md:p-8"
         >
-          <h3 className="text-2xl font-bold text-yellow-300 mb-6">Escala Cósmica</h3>
-          <div className="space-y-4">
-            {cosmicScaleData.map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1 + index * 0.1 }}
-                className="flex items-center justify-between p-4 bg-black/20 rounded-lg"
-              >
-                <span className="text-lg font-medium text-white">{item.object}</span>
-                <div className="text-right">
-                  <span className="text-xl font-bold text-yellow-300">{item.size.toLocaleString()}</span>
-                  <p className="text-sm text-gray-400">{item.unit}</p>
-                </div>
-              </motion.div>
-            ))}
+          <div className="flex items-center gap-2 mb-1">
+            <Gauge size={16} className="text-amber-300" />
+            <h3 className="font-display text-lg font-bold text-white">Escala Cósmica</h3>
+          </div>
+          <p className="text-xs text-white/55 mb-6">Cada barra representa o tamanho em escala log — do nosso planeta ao universo observável</p>
+
+          <div className="space-y-3">
+            {cosmicScaleData.map((item, i) => {
+              const max = cosmicScaleData[cosmicScaleData.length - 1].logSize;
+              const pct = Math.max(2, (item.logSize / max) * 100);
+              return (
+                <motion.div
+                  key={item.object}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ delay: 0.06 * i }}
+                  className="grid grid-cols-[140px_1fr_auto] sm:grid-cols-[180px_1fr_auto] items-center gap-3"
+                >
+                  <div>
+                    <div className="text-sm font-semibold text-white">{item.object}</div>
+                    <div className="text-[10px] text-white/45 uppercase tracking-widest">{item.note}</div>
+                  </div>
+                  <div className="relative h-3 rounded-full bg-white/5 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${pct}%` }}
+                      viewport={{ once: true, margin: "-50px" }}
+                      transition={{ delay: 0.06 * i + 0.2, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                      className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-amber-300 shadow-[0_0_18px_rgba(168,85,247,0.5)]"
+                    />
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-mono text-white">{item.size}</div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.5 }}
-          className="mt-8 text-center"
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+          className="text-center text-white/40 text-xs mt-8"
         >
-          <p className="text-gray-400 text-sm">
-            Dados compilados de NASA, ESA, IAU e observatórios astronômicos mundiais
-          </p>
-        </motion.div>
+          Dados compilados de NASA, ESA, IAU e observatórios astronômicos mundiais
+        </motion.p>
       </motion.div>
-    </div>
+    </section>
   );
 };
